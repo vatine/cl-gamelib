@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+ <title>Gamelib - map library</title>
+ <link rel="stylesheet" type="text/css" href="../style.css"/>
+ <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+</head>
+<body>
+ <div class="header">
+  <h1>Gamelib</h1>
+  <h2>The maps library</h2>
+ </div>
+<h3>Introduction</h3>
+<p>The deals with "maps" or "levels" and mapping from map descriptions to
+graphical tiles to display. In and of itself, the maps do not generate
+any graphics, they only specify what sort of tile is where.</p>
+
+This documentation will mention "tile type". A tile type is a keyword,
+naming a specific type of tile (door, wall, floor, anything else that
+is specified in a map file).
+
+<h3>Defining tile types</h3>
+<p>There are two different ways of defining a tile, depending on if the
+tile has "in-game self-action" or not. A tile that acts within the
+game (other than as an obstacle) is called a generator.</p>
+
+<p>One tile-mapping is pre-defined. The character "S" signifies both a
+tile of type :floor and a starting-position for the map. This is at
+the moment pre-coded and not likely to change.</p>
+
+<p>A normal tile only needs a character that defines it and a tile
+type. They are declared using the define-tile macro:<br>
+(define-tile <i>character</i> <i>tile-type</i>)</p>
+
+<p>A generator is like a normal tile, but it also has a generator class
+associated with it (one of the classes exported from the GAMES-2D
+package) that takes care of its in-game action. Generators are
+declared using the define-generator macro:<br>
+(define-generator <i>character</i> <i>tile-type</i> <i>generator-type</i>)</p>
+
+<h3>Map definitions</h3>
+<p>Maps are defined in text files, with a fairly simple format. The first
+line has the map level number, the width and the height of the map, as
+numbers. Then, the map follows, using characters mapped to tile types
+(designated by CL keywords) in the code. The type keywords are used in
+the graphics library to map to bitmaps.</p>
+
+<p>An example from Gatlopp (the first level) looks like:
+<pre>
+1 10 8
+##########
+#    S   #
+#  $     #
+#   $$ # #
+#  #  ## #
+# ###    #
+# >#     #
+##########
+</pre></p>
+
+<h3>Connecting tiles</h3>
+<p>If tiles (like, say, door and wall tiles) don't naturally extend all
+the way to the edges of the tile, the maps library has built-in
+functionality to help that happen.</p>
+
+<p>The functionality is exposed via the define-type-from-map macro:<br>
+(define-type-from-map <i>tile-type</i> <i><b>&rest</b></i>
+<i>character</i>)</p>
+
+<p>Doing this means that when tile-from-map finds a <i>tile-type</i>
+tile, it will know to look in all four cardinal directions and see if
+any of the specified characters are there. If so, it will return a
+"derived" tile type (essentially another keyword like
+:<i>base</i>-ensw). The keywords for the connecting types will have
+one or more of the letters "ensw" (in that order), signifying in what
+directions the tile joins up to other tiles.</p>
+
+<p>If the tile doesn't join up, the base type is returned.</p>
+
+<p>As an example, in Gatlopp, the wall tile doesn't extend to the edge
+and without using the multi-tile approach, a section of wall from the
+map file above might've looked like:<br>
+<img src="wall-single.png"><img src="wall-single.png"></p>
+
+<p>If we had declared a multi-tiled type:
+<pre>
+(define-tile-from-map wall #\# #\+) ; we want to join to walls and doors
+</pre>
+it would have looked like:<br>
+<img src="wall-e.png"><img src="wall-w.png"></p>
+
+<h3>Exported symbols</h3>
+<dl>
+<dt>*current-map*
+ <dd>Bound to a representation of the currently active map
+<dt>*mapcount*
+ <dd>Number of maps loaded
+<dt>activate-map
+ <dd>(activate-map <i>seq#</i>)<br>
+ Activate a new map. Will set *current-map* and go through the new
+map, checking for generators. Checks that seq# is positive and less
+than *mapcount*.
+<dt>define-generator
+ <dd>(define-generator <i>character</i> <i>tile-type</i>
+<i>generator-type</i>)<br>
+Define a tile type for a generator and associates it with a
+game-object class.
+<dt>define-tile
+<dt>define-type-from-map
+<dt>find-starting-position
+ <dd>(find-starting-position <i>map</i>)<br>
+Find the starting position of the map (if any). Return (<i>x</i>
+<i>y</i>) or NIL, depending on.
+<dt>height
+ <dd>Accessor for map class. Returns the height (in tiles) of a
+specific map.
+<dt>mapdata
+ <dd>Accessor for map class. Returns the array (WxH) of characters
+taht is the underlying map storage.
+<dt>read-all-maps
+ <dd>(read-all-maps <b><i>&optional</i></b> <i>spec</i>)<br>
+Read all map. Will default using a wildcarded pathname merged from
+*file-path* (defined in the games-2d package) and "*.map". If
+<i>spec</i> is provided, this will be used instead.
+<dt>seq
+ <dd>Accessor for map class. Returns the map sequence number.
+<dt>tile-from-map
+ <dd>(tile-from-map <i>x</i> <i>y</i> <i><b>&optional</b></i>
+<i>actual-type</i>)<br>
+Return tile-type for tile x,y (if that tile is a generator, return the
+generator-type, unless <i>actual-type</i> is non-NIL).
+<dt>width
+ <dd>Accessor for map class. Return the width of the map.
+</dl>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+ <title>Gamelib - Documentation</title>
+ <link rel="stylesheet" type="text/css" href="../style.css"/>
+ <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+</head>
+<body>
+ <div class="header">
+  <h1>Gamelib</h1>
+  <h2>Documentation</h2>
+ </div>
+<h3>Introduction</h3>
+
+<p>Gamelib is a project to create a library suitable for writing games in
+Common Lisp. The general idea is to start slow and eventually let
+ambition grow as far as can be.</p>
+
+<p>The initial graphical platform for Gamelib is <a
+href="http://www.cliki.net/CLX">CLX</a>, with no sound. In time, this
+might expand to using OpenGL (where available, posisbly via
+third-party packages) or using DirectDraw (when, say, running under
+Win32). There are nothing more than vague plans in those directiosn,
+right now. Help is, as usual, appreciated.</p>
+
+<h2>Components</h2>
+<p>Gamelib has four components, <a href="ai.html">the AI component</a>, the <a href="games-2d.html">games-2D</a> component, the
+<a href="3d.html">games-3d</a> component and the <a href="stick.html">joystick</a> component.</p>
+
+<h2>Intended use</h2>
+
+Since a few parameters that one might want to change are defined as
+constants, it is recommended that any distributed game that uses
+gamelib and can't use the standard settings ships a customized version
+of the required files from gamelib (in general, the AI component and
+one of the two game display components).
+
+<h3>License</h3>
+<p>Gamelib is licensed under an MIT license (essentially, do what you
+want, but make sure to keep attributions around).</p>

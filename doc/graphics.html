@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+ <title>Gamelib - games-2d library</title>
+ <link rel="stylesheet" type="text/css" href="../style.css"/>
+ <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+</head>
+<body>
+ <div class="header">
+  <h1>Gamelib</h1>
+  <h2>The games-2d library</h2>
+ </div>
+<h3>Introduction</h3>
+<p>This is the package that exports all the things that cause things to be
+shown on screen. It manages the display of background, moving objects,
+update window and manages input. The graphics library is also
+responsible of mapping from a tile keyword to a given image.</p>
+
+<p>Within the graphics library, directions are referred to as "north", "east",
+"south" and "west" (and combinations of these). Depending on exact circumstances, these directions will be numerically coded as the integers 0-7 or as keywords.</p>
+<img src="compass.png">
+
+<h3>Mapping tiles to images</h3>
+<p>The mapping from tile to image is done with the <tt>MAP-FILE</tt> macro.
+MAP-FILE takes a keyword designator and a file-name as arguments. The
+file-name is then merged with <tt>*FILE-PATH*</tt> (defined in globals.lisp,
+defaults to "<i>source-directory</i>/graphics/", change before calling
+map-file). The <tt>MAP-FILE</tt> macro is evaluated at load time.</p>
+
+<p>At the moment, the only supported bitmap format is XPM. People are
+enthusiastically encouraged to write readers for other bitmap formats
+(in CL, ideally). In the end, the file-reading function is dispatched
+depending on mappings in <tt>*IMAGE-TYPES*</tt>, a hashtable using file type as
+key and a file-reading function as value.</p>
+
+<h3>Mapping movables to images</h3>
+<p>The mapping from a movable object to a set of images is done with the
+<tt>MAP-ANIMATIONS</tt> macro. This macro takes three arguments: the class name
+of the movable to map, a list specifying base images for animatiosn
+for up/down/left/right movement and a list specifying base images for
+diagonal movement.</p>
+
+<p>A <a name="animspec">base image specification</a> is a list like <tt>(<i>file-name</i> <i>frame#</i> ...)</tt>,
+so listing image file and what frames in sequence they will be used
+in. It is a limitation that diagonal animation sequence has to be as
+long as non-diagonal (though it's a limitation that probably isn't too
+bad).</p>
+
+<p>The base images should be pointing "east" and "south east". These will
+be rotated in 90&deg; increments, to form the images for the remaining
+orientations. Two clip masks will be formed, one selecting only the
+non-black and one selecting only the black parts of the image ("black"
+means all of Red, Green and Blue are 0), to provide the illusion of
+transparence of the moving image.</p>
+
+<h3>Animation example</h3>
+<p>As an example how animations can be built and declared in the game, I
+will use the player animations from Gatlopp.</p>
+<pre>
+(map-animation player
+	       (("player-purple-0.xpm" 0 4 8)
+		("player-purple-1.xpm" 1 3)
+		("player-purple-2.xpm" 2)
+		("player-purple-3.xpm" 5 7)
+		("player-purple-4.xpm" 6))
+	       (("player-purple-diag-0.xpm" 0 4 8)
+		("player-purple-diag-1.xpm" 1 3)
+		("player-purple-diag-2.xpm" 2)
+		("player-purple-diag-3.xpm" 5 7)
+		("player-purple-diag-4.xpm" 6)))
+</pre>
+<p>This results in an 8-frame animation cycle, that looks as follows:<br>
+<table>
+<tr><td>Frame#</td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+<tr><td>Straights</td>
+ <td><img src="player-purple-0.png"></td>
+ <td><img src="player-purple-1.png"></td>
+ <td><img src="player-purple-2.png"></td>
+ <td><img src="player-purple-1.png"></td>
+ <td><img src="player-purple-0.png"></td>
+ <td><img src="player-purple-3.png"></td>
+ <td><img src="player-purple-4.png"></td>
+ <td><img src="player-purple-3.png"></td></tr>
+<tr><td>Straights</td>
+ <td><img src="player-purple-diag-0.png"></td>
+ <td><img src="player-purple-diag-1.png"></td>
+ <td><img src="player-purple-diag-2.png"></td>
+ <td><img src="player-purple-diag-1.png"></td>
+ <td><img src="player-purple-diag-0.png"></td>
+ <td><img src="player-purple-diag-3.png"></td>
+ <td><img src="player-purple-diag-4.png"></td>
+ <td><img src="player-purple-diag-3.png"></td></tr>
+</table>
+</p>
+
+There is another animation-mapping macro available, for those wanting
+"false-perspective" animations. The macro is named
+MAP-PERSPECTIVE-ANIMATION and takes 8 lists of animation
+specifications (similar to MAP-ANIMATION).
+
+<h3>Exported symbols</h3>
+<dl>
+ <dt>*background*
+  <dd> An X11 pixmap, where upon the map data is drawn. It should be
+enough to contain the whole map. By calling ENSURE-BACKGROUND, this
+will be taken care of.
+ <dt>*display*
+  <dd> The X11 display.
+ <dt>*file-path*
+  <dd> Base pathname for assorted graphics and map loading.
+ <dt>*font-preference*
+  <dd> List of fonts, in order from "most preferred" to "least
+preferred" for in-game text.
+ <dt>*game-over*
+  <dd> Boolean for determining if a game is over or not. May be used
+freely by any end-user.
+ <dt>*game-window*
+  <dd> The X11 window in which all graphics will end up being displayed.
+ <dt>*gcontext-set*
+  <dd> An X11 GContext, with blck background and white foreground.
+ <dt>*generator-ai-map*
+  <dd> A mapping from generator type to generator AI.
+ <dt>*image-types*
+  <dd> A mapping from image file extension to image file reader.
+ <dt>*moving-objects*
+  <dd> A list of all movable objects currently active.
+ <dt>*player*
+  <dd> Should contain a player object, referring to the current
+player.
+ <dt>animated-object
+  <dd>Class containing all animation data for a moving-object.
+ <dt>check-move
+  <dd>(check-move <i>object</i> <i>tile</i> <i>offset-x</i>
+<i>offset-y</i>)<br> Generic function, testing to see if a movable
+object can or cannot move onto a specific tile. 
+ <dt>collide
+  <dd>(collide <i>object-1</i> <i>object-2</i>)<br>
+Generic function, handling collisions.
+ <dt>clone
+  <dd> (clone <i>type</i> <i><b>&rest</b></i> <i>args</i> <i><b>&key</b></i> <i>(x 0 x-p)</i> <i>(y 0 y-p)</i> <i>(direction 0)</i> <i><b>&allow-other-keys</b></i>)Create new movable object, cloned from a base template of the
+type. The keys :x :y and :direction are used directly by clone, the
+rest are passed on to MAKE-INSTANCE for the class.
+ <dt>damage
+  <dd> Accessor for the monster class
+ <dt>defchecker
+  <dd>(defchecker <i>type</i> <i>(xl xh)</i> <i>(yl yh)</i>)<br>
+Helper macro for declaring check-move methods for a specific tile type
+for all objects in the moving-object class tree.
+ <dt>def-partial-checker
+  <dd>helper macro for declaring a check-move method for a tile type,
+able to collide with only a few types of movable object.
+ <dt>default-interaction-loop
+  <dd> Essentially the top UI loop of Gatlopp, included more as
+guidance than usable.
+ <dt>delete-clone
+  <dd>(delete-clone <i>clone</i>)<br> Generic function for deleting a cloned object from all places
+where it occurs.
+ <dt>draw
+  <dd>(draw <i>object</i>)<br>
+Generic function for drawing graphics. Should, ideally, not
+require any player extension. A defined :before method for all objects
+will, if needed, re-draw the map background.
+ <dt>draw-map
+  <dd>(draw-map)<br>
+Make all necessary image operations to draw the map on the
+background pixmap.
+ <dt>ensure-animations
+  <dd>(ensure-animations)<br>Load all defined animations.
+ <dt>firing-object
+  <dd>Mix-in class for objects that can fire missiles.
+ <dt>games-ignore
+  <dd>(games-ignore <i><b>&rest</b></i> <i>ignored</i>)<br>
+Utility function that ignores all its arguments and returns
+(values). Mostly to shut assorted CLX macros up.
+ <dt>generator
+  <dd>Class for generator data.
+ <dt>load-images
+  <dd>(load-images)<br>Utility function to load all non-animation images.
+ <dt>make-generator
+  <dd>(make-generator <i>tile</i> <i>type</i> <i>map-x</i> <i>map-y</i>)<br>
+Make a generator object, mostly intended to be called from maps-2d,
+but user-exposed.
+ <dt>map-animation
+  <dd>(map-animation <i>movable-type</i> <i>straights</i> <i>diagonals</i>)<br>
+Utility macro for mapping a movable object to a set of animation
+frames. Takes two <a href="#animspec">animation specifications</a>,
+one for movement parallel to an axis and one for diagonal movement.
+ <dt>map-file
+  <dd>(map-file <i>tile-type</i> <i>image-file</i>)<br>
+Utility macro for mapping a tile type to an image file.
+ <dt>map-perspective-animation
+  <dd>(map-perspective-animation <i>movable-type</i> <i>n</i>
+<i>ne</i> <i>e</i> <i>se</i> <i>s</i> <i>sw</i> <i>w</i>
+<i>nw</i>)<br>
+Utility macro for mapping a movable objkect to a set of animation
+frames, where each movement direction has a dedicated animation.
+ <dt>monster
+  <dd> Class for monsters
+ <dt>move
+  <dd>(move <i>object</i>)<br>Move an object according to its pre-defined movement. If it is
+an animated object, step the animation.
+ <dt>move-all
+  <dd>(move-all)<br>
+ <dt>move-ok
+  <dd>(move-ok <i>object</i>)<br>
+Function to perform collision detection for a moving object and
+ensuring that it is OK to proceed with a move.
+ <dt>movement
+  <dd>(movement <i>object</i>)<br>
+Returns a list of (<i>delta-x</i> <i>delta-y</i>) for a moving
+object. Uses lists rather than multiple values so it corresponds to
+what is required for (setf movement).
+ <dt>moving-object
+  <dd>Super-class for moving objects. All objects that move around in
+the game should inherit from this class.
+ <dt>score
+  <dd>Accessor for monster class, returns the score if a monster is killed.
+ <dt>target
+  <dd>Accessor class for the monster class, intended to return the
+current targetted game object.
+</dl>

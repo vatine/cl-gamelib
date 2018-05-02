@@ -1,0 +1,206 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+ <title>Gamelib - games-3d library</title>
+ <link rel="stylesheet" type="text/css" href="../style.css"/>
+ <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+</head>
+<body>
+ <div class="header">
+  <h1>Gamelib</h1>
+  <h2>The 3D library</h2>
+ </div>
+
+<h3>Introduction</h3>
+<p>The 3D gamelib component is for displaying wirefrae 3D objects. It
+doesn't do a hidden surface removal, but it does Z-buffering when
+displaying. The world coordinates use a right-hand coordinate system
+for objects, with the XY plane being the base plane and Z indicating
+height. The camera coordinate system is also a right-hand coordinate
+system, using the X axis as left/right, the Y axis as front/back and Z
+as up/down.</p>
+
+<p>Starting with version 0.3, there are two cameras available. The "old"
+camera, capable of moving in X, Y and Z, always turning in the XY
+plane and the "new" (or 3D) camera, having 6 degrees of freedom.</p>
+
+<h3><a name="defvol">Defining volumes</a></h3>
+
+<p>All game objects seem are defined as volumes, using the DEFVOLUME
+macro.</p>
+
+<p>DEFVOLUME takes three required parameters, one optional parameter and
+a list of extra slots to define.</p>
+
+<p>(DEFVOLUME <i>class name</i> <i>vertex count</i> (<i>surface</i> ...)
+  [<i>visible surfaces</i>] [<i>extra slot</i>]...)</p>
+
+<p>The surface spec is as follows:<br>
+  (<surface <i>type</i> <i>vertex 1</i> <i>vertex 2</i> <i>vertex 3</i> ...)</p>
+
+<p>Vertex specs should be in clock-wise order around a normal seen from
+outside the volume. Declaring the surfaces is, ideally, done from low
+to high, though surfaces that will never be seen can be placed last
+and stopped from ever displaying by using the "visible surfaces"
+limiter.</p>
+
+<p>The extra slots are user-defined slots for the shape class (ammunition
+count or what-have-you).</p>
+
+<h3>Base and transform designators</h3>
+
+<p>Starting from version 0.3, there is a "fully 3D" camera available,
+necessitating some new concepts and accessors (hopefully seamlessly
+integrated into the whole). The most developer-visible of these are
+"base designators" and "transform designators".</p>
+
+<p>A "base designator" is either 3-element vector, array or list.</p>
+
+<i>A "transform designator" is a 3-element sequence of "base
+designators", specifying the (world coordinate) vectors from the
+camera origo to [ 1, 0, 0 ], [ 0, 1, 0 ] and [ 0, 0, 1 ].</i>
+
+<h3>What will be shown and how?</h3>
+
+<p>All game objects that will be displayed should be added to the
+*ALL-SHAPES* list. All game objects that have independent
+movement should be added to the *MOVING-OBJECTS* list.</p>
+
+<p>In DRAW-ALL-SHAPES, all objects are sorted in falling average
+y-coordinate in camera space (effectively, that is depth). This
+ensures that as we traverse the list, we can stop trying to display
+items once we hit a negative y-average.</p>
+
+<p>After that, the DRAW-SHAPE gf is called. For most shapes, this will
+cause an update of the shape's cam-vertexes and then a list of all the
+sides to be displayed (the lowest of the shape's to-show limit or all
+defined sides) is generated, culled by a visibility test  and sorted
+by y-average. After that, DRAW-SHAPE is called for each flat surface
+of the shape.</p>
+
+<p>When applied to a flat, DRAW-SHAPE starts by checking if all vertexes
+of the flat are visible. If all vertexes are visible, we convert each
+vertex to an XY coordinate in screen-space. If not, we find a vertex
+that is visible, then traverse the flat vertex by vertex, inserting
+extra vertexes on the screen-edge where necessary and culling vertexes
+outside the display, then return a list of XY coordinates for each
+vertex-to-display. After all that, we call XLIB:DRAW-LINES twice on
+the resulting coordinates, once filling the outline with white, the
+second just generating the black outline.</p>
+
+<p>Spheres is handled slightly differently. Looking at the sphere code, I
+am suddenly not entirely sure that we are doing it correctly.</p>
+
+<h3>Exported symbols</h3>
+<dl>
+<dt>*camera*
+ <dd> Global variable that contains the "player camera".
+<dt>*display*
+ <dd> Global variable that contains the X display.
+<dt>*font-preference*
+ <dd> List of fonts, in falling preference order. Only consulted on
+initial connection and window creation.
+<dt>*grid-separation*
+ <dd>Separation, in world-space units, for a "grid on the floor".
+<dt>*score-table*
+ <dd>Tabulation of scores to object type. Used by <a href="#sfo">score-from-object</a>.
+<dt>+screen-side+
+ <dd>Constant for the height and width of the X pixmap that all
+3d-rendering is made on. Also guides the size of the X window it will
+be displayed in.
+<dt>3d-camera
+ <dd>(3d-camera <i>x</i> <i>y</i> <i>z</i> <b><i>&optional</i></b>
+<i>transform</i>)<br>
+Return a newly constructed 3d-camera object, at position [ X, Y, Z ].
+If an optional transform designator is passed it, the camera will
+use this as its transform, otherwise it will use a unit transform.
+<dt>box
+ <dd>Shape class. 8 corners, 6 sides.
+<dt>camera
+ <dd>Class.
+<dt><a name="cts">camera-to-screen</a>
+ <dd>(camera-to-screen <i>coord</i> <i>cam</i> <b><i>&optional</i></b>
+<i>clip</i>)<br>
+Convert from <i>coord</i> (in camera-space) to screen coordinates,
+return these as a list (X Y). If <i>clip</i> is non-nil and the
+coordinates are outside the screen, return NIL.
+<dt>collide-p
+ <dd>(collide-p <i>object-1</i><i> object-2</i>)<br>
+Generic function, determine if two objects are touching.
+The default methods check for camera colliding with anything and
+anything colliding with anything. The camera-collision is effectively
+"is the camera inside a bounding box, infinitely high, of the second
+object's footprint". The generic collision compares the bounding boxes
+of the footprints and returns T if there is an overlap.
+<dt>collide-action
+ <dd>(collide-action <i>object-1</i><i> object-2</i>)<br>
+Generic function, determine what happens when two objects collide. The
+default method prints some diagnosting on *STANDARD-OUTPUT*.
+<dt>coord
+ <dd>class
+<dt>defvolume
+ <dd>(defvolume <i>name</i> <i>vertexes</i> <i>sides</i>
+<b><i>&optional</i></b> <i>show-limit</i> <b><i>&rest</i></b>
+<i>extra-slots</i>)<br>
+Helper macro. Define a shape-class. See <a href="#defvol">defining volumes</a>
+<dt>draw-all-shapes
+ <dd>(draw-all-shapes)<br>Draw all shapes in *ALL-SHAPES*.
+<dt>draw-grid
+ <dd>(draw-grid <i>camera</i>)<br>
+Draw a grid with lines parallel to the X and Y world axis.
+<dt>draw-shape
+ <dd>(draw-shape <i>shape</i>)<br>
+Generic function.
+<dt>flat
+ <dd>Shape class, superclass for all flat surfaces.
+<dt>full-move
+ <dd>(full-move <i>camera</i> <i>displacement</i>)<br>
+Displace the camera by <i>displacement</i>, a 3D coordinate (using the
+camera's position as origo, expressed in the camera coordinate
+system). The displacement will be transformed into world coordinates
+before being applied.
+<dt>get-centre
+ <dd>(get-centre <i>shape</i> <i><i><b>&optional</b></i>
+camera-p</i>)<br>
+Get the geometric centre of a shape. If <i>camera-p</i> is non-nil,
+return results in camera-space coordinates, otherwise return
+coordinates in world-space.
+<dt>move
+ <dd>(move <i>object</i> <b><i>&optional</i></b> <i>distance</i>)<br>
+Generic function. Move an object.
+<dt>octaeder
+ <dd>Shape class
+<dt><a name="sfo">score-from-object</a>
+ <dd>(score-from-object <i>object</i>)
+Helper function, checks *score-table* for an entry for the class of
+<i>object</i> and returns that (or 0).
+<dt>shape
+ <dd>Shape super-class.
+<dt>tetraeder
+ <dd> Shape class
+<dt>tetragon
+ <dd>Shape class (flat)
+<dt>triangle
+ <dd>Shape class (flat)
+<dt>turn
+ <dd>(turn <i>object</i> <i>angle</i> <b><i>&optional</i></b> <i>angle</i>)<br>
+Generic function. Turn <i>object</i> through <i>angle</i>. If the
+object is "the standard camera" it will be turned around the Z axis. A
+3D camera will default to turn around teh Z axis unless otherwise
+specified. Axes are designated by the :x :y or :z keywords. The angle
+is specified in radians.
+<dt>volume
+ <dd>Shape class, superclass for all volumes.
+<dt>world-to-camera
+ <dd>(world-to-camera <i>world-coord</i> <i>camera</i>
+<b><i>&optional</i></b> <i>result</i>)<br>
+Compute camera-sapce coordinates for a given coordinate and return
+that. If <i>result</i> is provided, also side-effect-update this and
+return that object as the result (lessens object-creation slightly).
+<dt>world-to-screen
+ <dd>(world-to-screen <i>world-coord</i> <i>camera</i>
+<b><i>&optional</i></b> <i>clip</i>)<br>
+Converts a world coordinate to a screen XY. Clips in te same manner as <a href="#cts">camera-to-screen</a>.
+</dl>

@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+ <title>Gamelib - games-stick library</title>
+ <link rel="stylesheet" type="text/css" href="../style.css"/>
+ <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+</head>
+<body>
+ <div class="header">
+  <h1>Gamelib</h1>
+  <h2>The joystick library</h2>
+ </div>
+
+<h3>Introduction</h3>
+
+<p>Having the use of a joystick enhances the sensation of presence in a
+game. Under linux, the available joystick API is based around periodic
+reading of events from a device driver file (usually /dev/js<i>X</i>
+or /dev/input/js<i>X</i>).</p>
+
+<p>Gamelib now offers an interface to handle joysticks on the linux
+platform (code for joystick handling on other platforms is
+welcome). The joystick is somewhat abstracted from the raw data that
+the device driver offers.</p>
+
+<h3>API</h3>
+
+<p>The interface is centred around a JOYSTICK object (created by calling
+MAKE-STICK with a suitable device name as argument). To read an event
+from the device driver, call UPDATE-STICK with the joystick object as
+argument.</p>
+
+<p>Under SBCL (with thread support) there is a "continous poll" support
+(simply call CONTINOUS-POLL with the joystick object as argument, to
+terminate the polling thread, call TERMINATE-POLL with the object as
+argument). All relevant locking is done, keyed on if a joystick is
+polled or not. Still, the publicly available information will only be
+done after a call to UPDATE-STICK.</p>
+
+<p>There are two arrays that are of interest in a joystick object
+<i>js</i>. The first is the analog axes, (axes <i>js</i>) and the
+second is the buttons (buttons <i>js</i>). The library currently
+supports up to 8 analog axes and up to 24 buttons (and will most
+likely crash in amusing ways, should these limits be too strict).</p>
+
+<p>As part of the update and transformation from signed 16-bit integers
+to SINGLE-FLOAT, some transformations of the data can be done. The
+(currently) available library functions are SIMPLE-TRANSFER (the
+default), a simple division by 32768.0s0 and SQUARE-TRANSFER (the
+result of a SIMPLE-TRANSFER, squared and multiplied by the
+signum).</p>
+
+<p>A graph displaying these two transfer functions (X axis is raw
+joystick data, Y axis is the displacement along the axis available
+from GAMES-STICK):<br>
+<img src="stick-transfers.png" alt="Transfer function graph">
+</p>
+
+<p>A quick example using the stick library can be found <a href="demo-stick.lisp">here</a>.</p>
+
+<h3>Full STICK package exported symbol list</h3>
+<dl>
+<dt> (axes <i>joystick</i>)
+  <dd> Returns an array, with axis 0 at index 0, axis 1 at index 1 and
+so on.
+<dt> (buttons <i>joystick</i>)
+  <dd> Returns a bit-vector, with button 0 at index 0, button 1 at
+index 1 and so forth. A value of 0 means "not pressed", a value of 1
+means "pressed".
+<dt> (make-stick <i>device-file</i>)
+  <dd> Create a joystick object for the named device.
+<dt> (set-transfer <i>joystick</i> <i>axis</i> <i>transfer-fn</i>)
+  <dd> Set the transfer function for axis to the desired transfer
+function. A transfer function should map from [ -32768, 32767 ] to [
+-1.0s0, 1.0s0 ].
+<dt> (simple-transfer <i>value</i>)
+  <dd> A simple transfer function (linear mapping from the integer
+range to the single-float range).
+<dt> (square-transfer <i>value</i>)
+  <dd> A slightly more complex transfer function, causing less
+sensitivity in the "close to centred" region and slightly higher
+sensitivity in the more extreme regions.
+<dt> (update-stick <i>joystick</i>)
+  <dd> Copy current (hidden) data to teh publicly available data. Also
+applies the relevant transfer functions.
+<dt> (continous-poll <i>joystick</i>)
+  <dd> Only available if build with :SB-THREAD available on
+*FEATURES*.<br>Start a separate thread reading from the device. Still
+requires UPDATE-STICK to copy from private to pubic data. 
+<dt> (terminate-poll <i>joystick</i>)
+  <dd> Only available if build with :SB-THREAD available on
+*FEATURES*.<br>Terminate continous polling for a specific joystick.
+</dl>
+</body>
+</html>
